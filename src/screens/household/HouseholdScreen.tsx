@@ -53,8 +53,9 @@ export const HouseholdScreen = () => {
       await createHousehold(householdName.trim());
       setCreateModalVisible(false);
       setHouseholdName('');
-    } catch {
-      Alert.alert('Error', 'Failed to create household.');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create household.';
+      Alert.alert('Error', message);
     } finally {
       setCreating(false);
     }
@@ -268,7 +269,7 @@ export const HouseholdScreen = () => {
             <Button
               title="Create"
               onPress={handleCreate}
-              loading={creating}
+              loading={creating || loading}
               fullWidth
               size="lg"
             />

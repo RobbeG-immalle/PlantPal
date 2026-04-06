@@ -21,7 +21,7 @@ interface PlantNetResponse {
 export const identifyPlant = async (
   imageUri: string,
 ): Promise<PlantIdentificationResult> => {
-  const apiKey = process.env.PLANTNET_API_KEY;
+  const apiKey = process.env.EXPO_PUBLIC_PLANTNET_API_KEY;
 
   if (!apiKey || apiKey === 'your_plantnet_api_key_here') {
     return getMockIdentification();

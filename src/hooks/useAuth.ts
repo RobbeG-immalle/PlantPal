@@ -68,7 +68,12 @@ export const useAuth = () => {
       try {
         setLoading(true);
         clearError();
-        await signUp(email, password, displayName);
+        const user = await signUp(email, password, displayName);
+        // Fetch profile now that the Firestore doc has been created.
+        // The onAuthStateChanged listener may have fired before the doc was
+        // written, leaving userProfile as null.
+        const profile = await getUserProfile(user.uid);
+        if (profile) setUserProfile(profile);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Sign up failed.';
         setError(mapFirebaseError(message));
@@ -77,7 +82,7 @@ export const useAuth = () => {
         setLoading(false);
       }
     },
-    [setLoading, clearError, setError],
+    [setLoading, clearError, setError, setUserProfile],
   );
 
   const handleSignOut = useCallback(async () => {

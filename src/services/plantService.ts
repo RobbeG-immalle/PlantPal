@@ -13,16 +13,47 @@ import {
   arrayUnion,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from './firebase';
 import { Plant, NewPlant } from '../types/plant';
 import { COLLECTIONS } from '../utils/constants';
+
+/**
+ * Uploads a plant image to Firebase Storage and returns the download URL.
+ */
+export const uploadPlantImage = async (
+  localUri: string,
+  householdId: string,
+): Promise<string> => {
+  // Convert local file to blob via XMLHttpRequest (works reliably in React Native)
+  const blob: Blob = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response as Blob);
+    xhr.onerror = () => reject(new Error('Failed to read image file'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', localUri, true);
+    xhr.send(null);
+  });
+
+  const fileName = `${householdId}/${Date.now()}.jpg`;
+  const storageRef = ref(storage, `plants/${fileName}`);
+  await uploadBytes(storageRef, blob);
+  return getDownloadURL(storageRef);
+};
 
 /**
  * Adds a new plant to the household's plant collection.
  */
 export const addPlant = async (plant: NewPlant): Promise<string> => {
+  // Upload image to Storage if it's a local file URI
+  let imageUrl = plant.imageUrl;
+  if (imageUrl && (imageUrl.startsWith('file://') || imageUrl.startsWith('content://'))) {
+    imageUrl = await uploadPlantImage(imageUrl, plant.householdId);
+  }
+
   const ref = await addDoc(collection(db, COLLECTIONS.PLANTS), {
     ...plant,
+    imageUrl,
     wateringHistory: [plant.lastWateredAt],
     createdAt: serverTimestamp(),
   });

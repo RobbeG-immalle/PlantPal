@@ -41,8 +41,14 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
 
   if (finalStatus !== 'granted') return null;
 
-  const token = await Notifications.getExpoPushTokenAsync();
-  return token.data;
+  try {
+    const token = await Notifications.getExpoPushTokenAsync();
+    return token.data;
+  } catch (error) {
+    // Expo Go does not support remote push token registration for newer SDKs.
+    console.warn('Push token unavailable in this runtime:', error);
+    return null;
+  }
 };
 
 /**

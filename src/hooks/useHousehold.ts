@@ -8,7 +8,10 @@ import {
   getMembers as getMembersService,
   leaveHousehold as leaveHouseholdService,
 } from '../services/householdService';
-import { getUserProfile } from '../services/authService';
+import { getUserProfile, getCurrentUser } from '../services/authService';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../services/firebase';
+import { COLLECTIONS } from '../utils/constants';
 
 /**
  * Hook providing household management operations and state.
@@ -27,6 +30,31 @@ export const useHousehold = () => {
   } = useHouseholdStore();
 
   const { userProfile, setUserProfile } = useAuthStore();
+
+  /** Returns the current userProfile, fetching or recreating it if not yet loaded. */
+  const ensureUserProfile = useCallback(async () => {
+    if (userProfile) return userProfile;
+    const firebaseUser = getCurrentUser();
+    if (!firebaseUser) return null;
+
+    // Try to fetch existing profile
+    let profile = await getUserProfile(firebaseUser.uid);
+
+    // If profile doc is missing (e.g. sign-up failed to write to Firestore), recreate it
+    if (!profile) {
+      const userDoc = {
+        email: firebaseUser.email ?? '',
+        displayName: firebaseUser.displayName ?? '',
+        householdId: null,
+        createdAt: serverTimestamp(),
+      };
+      await setDoc(doc(db, COLLECTIONS.USERS, firebaseUser.uid), userDoc);
+      profile = await getUserProfile(firebaseUser.uid);
+    }
+
+    if (profile) setUserProfile(profile);
+    return profile;
+  }, [userProfile, setUserProfile]);
 
   /** Fetches the current user's household and its members. */
   const fetchHousehold = useCallback(async () => {
@@ -63,17 +91,22 @@ export const useHousehold = () => {
   /** Creates a new household and updates the user profile. */
   const createHousehold = useCallback(
     async (name: string) => {
-      if (!userProfile) return;
+      const profile = await ensureUserProfile();
+      if (!profile) {
+        const message = 'Your profile is still loading. Please try again in a moment.';
+        setError(message);
+        throw new Error(message);
+      }
 
       try {
         setLoading(true);
         clearError();
-        const h = await createHouseholdService(name, userProfile.id);
+        const h = await createHouseholdService(name, profile.id);
         setHousehold(h);
-        setMembers([userProfile]);
+        setMembers([profile]);
 
         // Refresh user profile
-        const updated = await getUserProfile(userProfile.id);
+        const updated = await getUserProfile(profile.id);
         if (updated) setUserProfile(updated);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to create household.';
@@ -83,25 +116,30 @@ export const useHousehold = () => {
         setLoading(false);
       }
     },
-    [userProfile, setHousehold, setMembers, setUserProfile, setLoading, setError, clearError],
+    [ensureUserProfile, setHousehold, setMembers, setUserProfile, setLoading, setError, clearError],
   );
 
   /** Joins an existing household via invite code. */
   const joinHousehold = useCallback(
     async (inviteCode: string) => {
-      if (!userProfile) return;
+      const profile = await ensureUserProfile();
+      if (!profile) {
+        const message = 'Your profile is still loading. Please try again in a moment.';
+        setError(message);
+        throw new Error(message);
+      }
 
       try {
         setLoading(true);
         clearError();
-        const h = await joinHouseholdService(inviteCode, userProfile.id);
+        const h = await joinHouseholdService(inviteCode, profile.id);
         setHousehold(h);
 
         const memberProfiles = await getMembersService(h.memberIds);
         setMembers(memberProfiles);
 
         // Refresh user profile
-        const updated = await getUserProfile(userProfile.id);
+        const updated = await getUserProfile(profile.id);
         if (updated) setUserProfile(updated);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to join household.';
@@ -111,21 +149,31 @@ export const useHousehold = () => {
         setLoading(false);
       }
     },
-    [userProfile, setHousehold, setMembers, setUserProfile, setLoading, setError, clearError],
+    [ensureUserProfile, setHousehold, setMembers, setUserProfile, setLoading, setError, clearError],
   );
 
   /** Leaves the current household. */
   const leaveHousehold = useCallback(async () => {
-    if (!userProfile?.householdId || !userProfile) return;
+    const profile = await ensureUserProfile();
+    if (!profile) {
+      const message = 'Your profile is still loading. Please try again in a moment.';
+      setError(message);
+      throw new Error(message);
+    }
+    if (!profile.householdId) {
+      const message = 'You are not currently in a household.';
+      setError(message);
+      throw new Error(message);
+    }
 
     try {
       setLoading(true);
       clearError();
-      await leaveHouseholdService(userProfile.householdId, userProfile.id);
+      await leaveHouseholdService(profile.householdId, profile.id);
       setHousehold(null);
       setMembers([]);
 
-      const updated = await getUserProfile(userProfile.id);
+      const updated = await getUserProfile(profile.id);
       if (updated) setUserProfile(updated);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to leave household.';
@@ -134,7 +182,7 @@ export const useHousehold = () => {
     } finally {
       setLoading(false);
     }
-  }, [userProfile, setHousehold, setMembers, setUserProfile, setLoading, setError, clearError]);
+  }, [ensureUserProfile, setHousehold, setMembers, setUserProfile, setLoading, setError, clearError]);
 
   return {
     household,
