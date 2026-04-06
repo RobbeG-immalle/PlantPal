@@ -1,0 +1,31 @@
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Firebase
+functions/lib/
+.firebase/
+firebase-debug.log
+
+# Environment variables
+.env
+.env.local
+
+# OS
+.DS_Store
+.DS_Store?
+*.swp
+*.swo
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# Builds
+build/

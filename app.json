@@ -1,0 +1,68 @@
+{
+  "expo": {
+    "name": "PlantPal",
+    "slug": "plantpal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8F9FA"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.plantpal.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "PlantPal needs camera access to photograph your plants for identification.",
+        "NSPhotoLibraryUsageDescription": "PlantPal needs photo library access to upload plant photos."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#6BCB77"
+      },
+      "package": "com.plantpal.app",
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE",
+        "RECEIVE_BOOT_COMPLETED",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#6BCB77",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow PlantPal to access your camera to photograph plants."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow PlantPal to access your photos to identify plants."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "your-eas-project-id"
+      }
+    }
+  }
+}
