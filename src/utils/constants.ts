@@ -17,6 +17,13 @@ export const COLLECTIONS = {
   INVITATIONS: 'invitations',
 } as const;
 
+/** Maximum number of plants allowed on the free tier. */
+export const FREE_PLANT_LIMIT = 5;
+
+/** Subscription pricing display strings. */
+export const PREMIUM_MONTHLY_PRICE = '€3.49';
+export const LIFETIME_PRICE = '€24.99';
+
 /** Default watering intervals by species (days). */
 export const SPECIES_WATERING_DEFAULTS: Record<string, number> = {
   // Succulents & Cacti

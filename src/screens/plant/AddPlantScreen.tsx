@@ -14,20 +14,28 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { Timestamp } from 'firebase/firestore';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
 import { useAuthStore } from '../../stores/authStore';
 import { usePlants } from '../../hooks/usePlants';
+import { useSubscriptionStore } from '../../stores/subscriptionStore';
 import { identifyPlant } from '../../services/plantRecognitionService';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { PlantIdentificationResult } from '../../types/plant';
+import { RootStackParamList } from '../../types/navigation';
+
+type AddPlantNavProp = NativeStackNavigationProp<RootStackParamList>;
 
 /** Screen for adding a new plant via camera or gallery + AI identification. */
 export const AddPlantScreen = () => {
   const { colors, typography, borderRadius, shadows } = useTheme();
   const { userProfile } = useAuthStore();
   const { addPlant } = usePlants();
+  const { featureAccess } = useSubscriptionStore();
+  const navigation = useNavigation<AddPlantNavProp>();
 
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [identifying, setIdentifying] = useState(false);
@@ -66,7 +74,10 @@ export const AddPlantScreen = () => {
       const uri = result.assets[0].uri;
       setImageUri(uri);
       setIdentified(null);
-      await handleIdentify(uri);
+      // AI recognition is a premium feature
+      if (featureAccess.aiRecognition) {
+        await handleIdentify(uri);
+      }
     }
   };
 
@@ -208,6 +219,24 @@ export const AddPlantScreen = () => {
             />
           </View>
 
+          {/* Upgrade prompt for free users */}
+          {!featureAccess.aiRecognition && (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Paywall', { source: 'ai_recognition' })}
+              style={[
+                styles.upgradePrompt,
+                { backgroundColor: `${colors.accent}20`, borderRadius: borderRadius.md },
+              ]}
+            >
+              <Text style={[typography.footnote, { color: colors.text }]}>
+                🔒 Upgrade to identify plants automatically
+              </Text>
+              <Text style={[typography.caption1, { color: colors.textSecondary }]}>
+                Tap to unlock AI plant recognition →
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {/* Identification result */}
           {identifying && (
             <LoadingSpinner message="Identifying your plant... 🔍" />
@@ -324,6 +353,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   photoBtn: { flex: 1 },
+  upgradePrompt: {
+    padding: 12,
+    gap: 4,
+    marginBottom: 8,
+  },
   identifiedCard: {
     padding: 16,
     marginBottom: 24,

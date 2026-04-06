@@ -5,6 +5,7 @@ import { Timestamp } from 'firebase/firestore';
 import { getNotificationMessage } from '../utils/notificationMessages';
 import { getNextWateringDate } from '../utils/wateringUtils';
 import { NOTIFICATION_CHANNEL_ID } from '../utils/constants';
+import { SubscriptionTier } from '../types/subscription';
 
 // Configure how notifications appear when the app is foregrounded
 Notifications.setNotificationHandler({
@@ -48,12 +49,16 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
 /**
  * Schedules escalating watering notifications for a plant.
  * Cancels any previously scheduled notifications for the same plant.
+ *
+ * Free tier: only the day-of notification with a generic message.
+ * Premium/Lifetime: all three (day-of, +1 day, +3 days) with funny messages.
  */
 export const schedulePlantWateringNotifications = async (
   plantId: string,
   plantName: string,
   lastWateredAt: Timestamp,
   intervalDays: number,
+  tier: SubscriptionTier = 'free',
 ): Promise<void> => {
   // Cancel existing notifications for this plant
   await cancelPlantNotifications(plantId);
@@ -63,25 +68,34 @@ export const schedulePlantWateringNotifications = async (
 
   if (nextWatering <= now) return; // Already overdue, don't schedule
 
-  const friendlyMsg = getNotificationMessage(plantName, 'friendly');
-  const sassyMsg = getNotificationMessage(plantName, 'sassy');
-  const emergencyMsg = getNotificationMessage(plantName, 'emergency');
+  const isPremiumTier = tier === 'premium' || tier === 'lifetime';
 
   // Day-of reminder (at 9 AM on due date)
+  // Free tier: generic message. Premium/Lifetime: funny message.
+  const dayOfMsg = isPremiumTier
+    ? getNotificationMessage(plantName, 'friendly')
+    : { title: '🌿 PlantPal', body: `Time to water ${plantName} today!` };
+
   const dayOfDate = new Date(nextWatering);
   dayOfDate.setHours(9, 0, 0, 0);
   if (dayOfDate > now) {
     await Notifications.scheduleNotificationAsync({
       identifier: `${plantId}_day0`,
       content: {
-        title: friendlyMsg.title,
-        body: friendlyMsg.body,
+        title: dayOfMsg.title,
+        body: dayOfMsg.body,
         data: { plantId, type: 'watering_reminder' },
         categoryIdentifier: NOTIFICATION_CHANNEL_ID,
       },
       trigger: { date: dayOfDate },
     });
   }
+
+  // Escalating reminders are premium-only
+  if (!isPremiumTier) return;
+
+  const sassyMsg = getNotificationMessage(plantName, 'sassy');
+  const emergencyMsg = getNotificationMessage(plantName, 'emergency');
 
   // +1 day sassy reminder
   const sassyDate = new Date(nextWatering);

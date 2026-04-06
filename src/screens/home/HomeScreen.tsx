@@ -15,15 +15,20 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import { useTheme } from '../../theme/ThemeContext';
 import { usePlants } from '../../hooks/usePlants';
 import { useAuthStore } from '../../stores/authStore';
+import { useSubscriptionStore } from '../../stores/subscriptionStore';
 import { PlantCard } from '../../components/PlantCard';
 import { EmptyState } from '../../components/EmptyState';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { PremiumBadge } from '../../components/PremiumBadge';
 import { Plant } from '../../types/plant';
-import { MainTabParamList, HomeStackParamList } from '../../types/navigation';
+import { MainTabParamList, HomeStackParamList, RootStackParamList } from '../../types/navigation';
 
 type HomeNavProp = CompositeNavigationProp<
-  NativeStackNavigationProp<HomeStackParamList, 'PlantList'>,
-  BottomTabNavigationProp<MainTabParamList>
+  CompositeNavigationProp<
+    NativeStackNavigationProp<HomeStackParamList, 'PlantList'>,
+    BottomTabNavigationProp<MainTabParamList>
+  >,
+  NativeStackNavigationProp<RootStackParamList>
 >;
 
 /** Main plant list screen showing all plants in the household. */
@@ -31,7 +36,18 @@ export const HomeScreen = () => {
   const { colors, typography, spacing } = useTheme();
   const { plants, loading, error, fetchPlants, setSelectedPlant } = usePlants();
   const { userProfile } = useAuthStore();
+  const { featureAccess, isPremium } = useSubscriptionStore();
   const navigation = useNavigation<HomeNavProp>();
+
+  const isAtLimit = !isPremium() && plants.length >= featureAccess.maxPlants;
+
+  const handleAddPlant = () => {
+    if (isAtLimit) {
+      navigation.navigate('Paywall', { source: 'plant_limit' });
+    } else {
+      navigation.navigate('AddPlant');
+    }
+  };
 
   useEffect(() => {
     fetchPlants();
@@ -72,13 +88,23 @@ export const HomeScreen = () => {
             My Plants
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('AddPlant')}
-          style={[styles.fab, { backgroundColor: colors.primary }]}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.fabIcon}>+</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {!isPremium() && (
+            <TouchableOpacity onPress={() => navigation.navigate('Paywall', { source: 'header' })}>
+              <PremiumBadge size="sm" />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            onPress={handleAddPlant}
+            style={[
+              styles.fab,
+              { backgroundColor: isAtLimit ? colors.textSecondary : colors.primary },
+            ]}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.fabIcon}>+</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {loading && plants.length === 0 ? (
@@ -119,15 +145,21 @@ export const HomeScreen = () => {
             <PlantCard plant={item} onPress={handlePlantPress} />
           )}
           ListHeaderComponent={
-            <Text
-              style={[
-                styles.countLabel,
-                typography.footnote,
-                { color: colors.textSecondary },
-              ]}
-            >
-              {plants.length} {plants.length === 1 ? 'plant' : 'plants'}
-            </Text>
+            <View style={styles.listHeader}>
+              <Text
+                style={[
+                  typography.footnote,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {plants.length} {plants.length === 1 ? 'plant' : 'plants'}
+              </Text>
+              {!isPremium() && (
+                <Text style={[typography.footnote, { color: isAtLimit ? colors.danger : colors.textSecondary }]}>
+                  {plants.length}/{featureAccess.maxPlants} limit
+                </Text>
+              )}
+            </View>
           }
         />
       )}
@@ -146,6 +178,11 @@ const styles = StyleSheet.create({
   },
   greeting: { marginBottom: 2 },
   title: { fontWeight: '700' },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   fab: {
     width: 44,
     height: 44,
@@ -166,7 +203,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 4,
   },
-  countLabel: {
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: 4,
     marginBottom: 8,
   },

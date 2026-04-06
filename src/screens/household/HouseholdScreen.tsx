@@ -18,13 +18,17 @@ import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../../theme/ThemeContext';
 import { useHousehold } from '../../hooks/useHousehold';
 import { useAuthStore } from '../../stores/authStore';
+import { useSubscriptionStore } from '../../stores/subscriptionStore';
 import { Button } from '../../components/Button';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
-import { MainTabParamList, HouseholdStackParamList } from '../../types/navigation';
+import { MainTabParamList, HouseholdStackParamList, RootStackParamList } from '../../types/navigation';
 
 type HouseholdNavProp = CompositeNavigationProp<
-  NativeStackNavigationProp<HouseholdStackParamList, 'HouseholdMain'>,
-  BottomTabNavigationProp<MainTabParamList>
+  CompositeNavigationProp<
+    NativeStackNavigationProp<HouseholdStackParamList, 'HouseholdMain'>,
+    BottomTabNavigationProp<MainTabParamList>
+  >,
+  NativeStackNavigationProp<RootStackParamList>
 >;
 
 /** Screen for managing a household – create, view, invite members. */
@@ -33,6 +37,7 @@ export const HouseholdScreen = () => {
   const { household, members, loading, error, fetchHousehold, createHousehold, leaveHousehold } =
     useHousehold();
   const { userProfile } = useAuthStore();
+  const { featureAccess } = useSubscriptionStore();
   const navigation = useNavigation<HouseholdNavProp>();
 
   const [createModalVisible, setCreateModalVisible] = useState(false);
@@ -118,14 +123,26 @@ export const HouseholdScreen = () => {
 
             <Button
               title="🏡 Create household"
-              onPress={() => setCreateModalVisible(true)}
+              onPress={() => {
+                if (!featureAccess.householdSharing) {
+                  navigation.navigate('Paywall', { source: 'household' });
+                } else {
+                  setCreateModalVisible(true);
+                }
+              }}
               fullWidth
               size="lg"
               style={styles.createBtn}
             />
             <Button
               title="🔑 Join with invite code"
-              onPress={() => navigation.navigate('JoinHousehold')}
+              onPress={() => {
+                if (!featureAccess.householdSharing) {
+                  navigation.navigate('Paywall', { source: 'household' });
+                } else {
+                  navigation.navigate('JoinHousehold');
+                }
+              }}
               variant="outline"
               fullWidth
               size="lg"

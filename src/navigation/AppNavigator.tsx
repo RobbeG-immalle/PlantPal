@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import { AuthNavigator } from './AuthNavigator';
 import { MainTabNavigator } from './MainTabNavigator';
+import { PaywallScreen } from '../screens/subscription/PaywallScreen';
 import { useAuthStore } from '../stores/authStore';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
@@ -25,7 +26,14 @@ export const AppNavigator = () => {
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {firebaseUser ? (
-          <Stack.Screen name="Main" component={MainTabNavigator} />
+          <>
+            <Stack.Screen name="Main" component={MainTabNavigator} />
+            <Stack.Screen
+              name="Paywall"
+              component={PaywallScreen}
+              options={{ presentation: 'modal', headerShown: false }}
+            />
+          </>
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />
         )}
