@@ -1,4 +1,5 @@
 import { FeatureAccess, SubscriptionPlan, SubscriptionTier } from '../types/subscription';
+import { FREE_PLANT_LIMIT } from './constants';
 
 /** All available subscription plans. */
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
@@ -44,9 +45,6 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     ],
   },
 ];
-
-/** Maximum number of plants for free tier users. */
-export const FREE_PLANT_LIMIT = 5;
 
 /** Returns the feature access flags for a given subscription tier. */
 export const getFeatureAccess = (tier: SubscriptionTier): FeatureAccess => {

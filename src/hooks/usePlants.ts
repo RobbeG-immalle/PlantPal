@@ -60,7 +60,7 @@ export const usePlants = () => {
     async (plant: NewPlant): Promise<string | null> => {
       // Enforce the plant limit for the current subscription tier
       if (plants.length >= featureAccess.maxPlants) {
-        setError(`You've reached the limit of ${featureAccess.maxPlants} plants on the free plan. Upgrade to add unlimited plants!`);
+        setError(`You've reached your plant limit of ${featureAccess.maxPlants}. Upgrade to add unlimited plants!`);
         return null;
       }
 

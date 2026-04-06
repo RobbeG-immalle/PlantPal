@@ -154,7 +154,7 @@ export const HomeScreen = () => {
               >
                 {plants.length} {plants.length === 1 ? 'plant' : 'plants'}
               </Text>
-              {!isPremium() && (
+              {!isPremium() && featureAccess.maxPlants !== Infinity && (
                 <Text style={[typography.footnote, { color: isAtLimit ? colors.danger : colors.textSecondary }]}>
                   {plants.length}/{featureAccess.maxPlants} limit
                 </Text>
