@@ -36,7 +36,7 @@ const SLIDES = [
     id: '3',
     emoji: '💧',
     title: 'Get Reminded',
-    subtitle: 'We\'ll send you (very judgemental) reminders when your plants need water.',
+    subtitle: 'We\'ll send you (very judgmental) reminders when your plants need water.',
   },
 ];
 
