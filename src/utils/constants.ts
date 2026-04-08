@@ -17,6 +17,9 @@ export const COLLECTIONS = {
   INVITATIONS: 'invitations',
 } as const;
 
+/** Maximum number of plants allowed on the free tier. */
+export const FREE_PLANT_LIMIT = 5;
+
 /** Default watering intervals by species (days). */
 export const SPECIES_WATERING_DEFAULTS: Record<string, number> = {
   // Succulents & Cacti

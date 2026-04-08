@@ -4,6 +4,8 @@ import { Plant } from './plant';
 export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
+  /** Paywall modal – can be presented from anywhere in the app. */
+  Paywall: { source?: string } | undefined;
 };
 
 /** Auth stack param list. */

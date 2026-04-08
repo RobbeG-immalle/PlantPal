@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { Timestamp } from 'firebase/firestore';
 import { usePlantStore } from '../stores/plantStore';
 import { useAuthStore } from '../stores/authStore';
+import { useSubscriptionStore } from '../stores/subscriptionStore';
 import {
   addPlant as addPlantService,
   updatePlant as updatePlantService,
@@ -32,6 +33,7 @@ export const usePlants = () => {
   } = usePlantStore();
 
   const { userProfile } = useAuthStore();
+  const { featureAccess, subscription } = useSubscriptionStore();
 
   /** Fetches all plants for the current household. */
   const fetchPlants = useCallback(async () => {
@@ -56,6 +58,12 @@ export const usePlants = () => {
   /** Adds a new plant and schedules its watering notifications. */
   const addPlant = useCallback(
     async (plant: NewPlant): Promise<string | null> => {
+      // Enforce the plant limit for the current subscription tier
+      if (plants.length >= featureAccess.maxPlants) {
+        setError(`You've reached your plant limit of ${featureAccess.maxPlants}. Upgrade to add unlimited plants!`);
+        return null;
+      }
+
       try {
         setLoading(true);
         clearError();
@@ -73,6 +81,7 @@ export const usePlants = () => {
           plant.name,
           plant.lastWateredAt,
           plant.wateringIntervalDays,
+          subscription.tier,
         ).catch(() => {}); // Notifications are best-effort
 
         return id;
@@ -84,7 +93,7 @@ export const usePlants = () => {
         setLoading(false);
       }
     },
-    [addPlantToStore, setLoading, setError, clearError],
+    [plants.length, featureAccess.maxPlants, subscription.tier, addPlantToStore, setLoading, setError, clearError],
   );
 
   /** Updates a plant's fields. */
@@ -100,7 +109,7 @@ export const usePlants = () => {
         if (plant && (updates.wateringIntervalDays || updates.lastWateredAt)) {
           const lastWatered = updates.lastWateredAt ?? plant.lastWateredAt;
           const interval = updates.wateringIntervalDays ?? plant.wateringIntervalDays;
-          await schedulePlantWateringNotifications(id, plant.name, lastWatered, interval).catch(() => {});
+          await schedulePlantWateringNotifications(id, plant.name, lastWatered, interval, subscription.tier).catch(() => {});
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to update plant.';
@@ -144,6 +153,7 @@ export const usePlants = () => {
             plant.name,
             now,
             plant.wateringIntervalDays,
+            subscription.tier,
           ).catch(() => {});
         }
       } catch (err) {

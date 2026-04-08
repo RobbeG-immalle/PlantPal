@@ -9,12 +9,20 @@ import {
   Alert,
   TouchableOpacity,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
 import { useAuth } from '../../hooks/useAuth';
 import { useAuthStore } from '../../stores/authStore';
 import { useHouseholdStore } from '../../stores/householdStore';
+import { useSubscriptionStore } from '../../stores/subscriptionStore';
+import { useSubscription } from '../../hooks/useSubscription';
 import { Button } from '../../components/Button';
 import { APP_VERSION } from '../../utils/constants';
+import { SUBSCRIPTION_PLANS } from '../../utils/subscriptionConfig';
+import { RootStackParamList } from '../../types/navigation';
+
+type SettingsNavProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface SettingsRowProps {
   label: string;
@@ -67,6 +75,11 @@ export const SettingsScreen = () => {
   const { signOut } = useAuth();
   const { userProfile } = useAuthStore();
   const { household } = useHouseholdStore();
+  const { subscription } = useSubscriptionStore();
+  const { restore } = useSubscription();
+  const navigation = useNavigation<SettingsNavProp>();
+
+  const currentPlan = SUBSCRIPTION_PLANS.find((p) => p.tier === subscription.tier);
 
   const handleSignOut = () => {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
@@ -145,6 +158,53 @@ export const SettingsScreen = () => {
               value={household.inviteCode}
             />
           )}
+        </View>
+
+        {/* Subscription */}
+        <View
+          style={[
+            styles.section,
+            {
+              backgroundColor: colors.surface,
+              borderRadius: borderRadius.lg,
+              ...shadows.sm,
+            },
+          ]}
+        >
+          <Text style={[styles.sectionTitle, typography.footnote, { color: colors.textSecondary }]}>
+            SUBSCRIPTION
+          </Text>
+          <SettingsRow
+            label="Current plan"
+            value={
+              subscription.tier === 'free'
+                ? `${currentPlan?.name ?? 'Seedling'} (Free)`
+                : `${currentPlan?.name ?? 'Premium'} 💎`
+            }
+            onPress={subscription.tier === 'free' ? () => navigation.navigate('Paywall', { source: 'settings' }) : undefined}
+            rightElement={
+              subscription.tier === 'free' ? (
+                <Text style={[typography.footnote, { color: colors.primary, fontWeight: '600' }]}>
+                  Upgrade →
+                </Text>
+              ) : (
+                <Text style={[typography.footnote, { color: colors.primary }]}>Active</Text>
+              )
+            }
+          />
+          {subscription.tier === 'free' && (
+            <SettingsRow
+              label="Go Premium"
+              onPress={() => navigation.navigate('Paywall', { source: 'settings' })}
+            />
+          )}
+          <SettingsRow
+            label="Restore purchases"
+            onPress={async () => {
+              await restore();
+              Alert.alert('Restored', 'Your purchases have been restored.');
+            }}
+          />
         </View>
 
         {/* Appearance */}
