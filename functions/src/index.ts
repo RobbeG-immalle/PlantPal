@@ -1,4 +1,6 @@
-import * as functions from 'firebase-functions';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
 admin.initializeApp();
@@ -24,11 +26,10 @@ interface User {
  * Runs daily to check for plants that need watering and sends push notifications.
  * Scheduled to run at 9 AM UTC every day.
  */
-export const dailyWateringCheck = functions.pubsub
-  .schedule('0 9 * * *')
-  .timeZone('UTC')
-  .onRun(async (_context) => {
-    functions.logger.info('Running daily watering check');
+export const dailyWateringCheck = onSchedule(
+  { schedule: '0 9 * * *', timeZone: 'UTC' },
+  async () => {
+    logger.info('Running daily watering check');
 
     const now = admin.firestore.Timestamp.now();
     const plantsSnap = await db.collection('plants').get();
@@ -82,36 +83,43 @@ export const dailyWateringCheck = functions.pubsub
 
         try {
           await messaging.send(message);
-          functions.logger.info(`Sent notification to user ${memberId}`);
+          logger.info(`Sent notification to user ${memberId}`);
         } catch (error) {
-          functions.logger.error(`Failed to send notification to ${memberId}:`, error);
+          logger.error(`Failed to send notification to ${memberId}:`, error);
         }
       }
     }
 
-    functions.logger.info('Daily watering check complete');
-  });
+    logger.info('Daily watering check complete');
+  },
+);
 
 /**
  * Triggered when a plant is added – logs the event.
  */
-export const onPlantAdded = functions.firestore
-  .document('plants/{plantId}')
-  .onCreate(async (snap, context) => {
+export const onPlantAdded = onDocumentCreated(
+  'plants/{plantId}',
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
     const plant = snap.data() as Plant;
-    functions.logger.info(`New plant added: ${plant.name} (${context.params.plantId})`);
-  });
+    logger.info(`New plant added: ${plant.name} (${event.params.plantId})`);
+  },
+);
 
 /**
  * Triggered when a plant is watered (lastWateredAt changes).
  */
-export const onPlantWatered = functions.firestore
-  .document('plants/{plantId}')
-  .onUpdate(async (change, context) => {
+export const onPlantWatered = onDocumentUpdated(
+  'plants/{plantId}',
+  async (event) => {
+    const change = event.data;
+    if (!change) return;
     const before = change.before.data() as Plant;
     const after = change.after.data() as Plant;
 
     if (before.lastWateredAt.isEqual(after.lastWateredAt)) return;
 
-    functions.logger.info(`Plant watered: ${after.name} (${context.params.plantId})`);
-  });
+    logger.info(`Plant watered: ${after.name} (${event.params.plantId})`);
+  },
+);

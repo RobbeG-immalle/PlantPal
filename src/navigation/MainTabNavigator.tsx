@@ -66,7 +66,7 @@ export const MainTabNavigator = () => {
         component={HomeStackNavigator}
         options={{
           tabBarLabel: 'My Plants',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🌿" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🪴" focused={focused} />,
         }}
       />
       <Tab.Screen
@@ -74,7 +74,7 @@ export const MainTabNavigator = () => {
         component={AddPlantScreen}
         options={{
           tabBarLabel: 'Add Plant',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="➕" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🌱" focused={focused} />,
         }}
       />
       <Tab.Screen
@@ -82,7 +82,7 @@ export const MainTabNavigator = () => {
         component={HouseholdStackNavigator}
         options={{
           tabBarLabel: 'Household',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏡" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
         }}
       />
       <Tab.Screen
@@ -90,7 +90,7 @@ export const MainTabNavigator = () => {
         component={SettingsScreen}
         options={{
           tabBarLabel: 'Settings',
-          tabBarIcon: ({ focused }) => <TabIcon emoji="⚙️" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🐝" focused={focused} />,
         }}
       />
     </Tab.Navigator>
