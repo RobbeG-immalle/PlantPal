@@ -15,6 +15,7 @@ export const COLLECTIONS = {
   HOUSEHOLDS: 'households',
   PLANTS: 'plants',
   INVITATIONS: 'invitations',
+  GROWTH_ENTRIES: 'growthEntries',
 } as const;
 
 /** Maximum number of plants allowed on the free tier. */

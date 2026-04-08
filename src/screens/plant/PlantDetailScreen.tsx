@@ -12,20 +12,35 @@ import {
   TextInput,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useTheme } from '../../theme/ThemeContext';
 import { usePlants } from '../../hooks/usePlants';
 import { usePlantStore } from '../../stores/plantStore';
 import { StatusBadge } from '../../components/StatusBadge';
 import { Button } from '../../components/Button';
+import { FeatureGate } from '../../components/FeatureGate';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 import { getPlantStatus, formatNextWatering, formatDate } from '../../utils/wateringUtils';
 import { Plant } from '../../types/plant';
+import { HomeStackParamList, MainTabParamList, RootStackParamList } from '../../types/navigation';
+
+type DetailNavProp = CompositeNavigationProp<
+  CompositeNavigationProp<
+    NativeStackNavigationProp<HomeStackParamList, 'PlantDetail'>,
+    BottomTabNavigationProp<MainTabParamList>
+  >,
+  NativeStackNavigationProp<RootStackParamList>
+>;
 
 /** Screen showing full details of a plant with watering actions. */
 export const PlantDetailScreen = () => {
   const { colors, typography, borderRadius, shadows, spacing } = useTheme();
   const { selectedPlant } = usePlantStore();
   const { waterPlant, deletePlant, updatePlant } = usePlants();
+  const navigation = useNavigation<DetailNavProp>();
 
   const [watering, setWatering] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -234,6 +249,25 @@ export const PlantDetailScreen = () => {
               style={styles.actionBtn}
             />
           </View>
+
+          <FeatureGate
+            feature="plantLifecycle"
+            fallback={
+              <Button
+                title="🌱 Growth timeline"
+                onPress={() => navigation.navigate('Paywall', { source: 'plant_lifecycle' })}
+                variant="outline"
+                fullWidth
+              />
+            }
+          >
+            <Button
+              title="🌱 Growth timeline"
+              onPress={() => navigation.navigate('PlantLifecycle', { plantId: plant.id })}
+              variant="outline"
+              fullWidth
+            />
+          </FeatureGate>
         </View>
       </ScrollView>
 
