@@ -22,6 +22,7 @@ import { addGrowthEntry, getGrowthEntries } from '../../services/plantService';
 import { formatDate } from '../../utils/wateringUtils';
 import { GrowthEntry } from '../../types/plant';
 import { HomeStackParamList } from '../../types/navigation';
+import { usePlantStore } from '../../stores/plantStore';
 
 type LifecycleRouteProp = RouteProp<HomeStackParamList, 'PlantLifecycle'>;
 type LifecycleNavProp = NativeStackNavigationProp<HomeStackParamList, 'PlantLifecycle'>;
@@ -32,6 +33,8 @@ export const PlantLifecycleScreen = () => {
   const navigation = useNavigation<LifecycleNavProp>();
   const route = useRoute<LifecycleRouteProp>();
   const { plantId } = route.params;
+  const { selectedPlant } = usePlantStore();
+  const householdId = selectedPlant?.householdId ?? plantId;
 
   const [entries, setEntries] = useState<GrowthEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -80,9 +83,8 @@ export const PlantLifecycleScreen = () => {
     setAddingNote(false);
     setUploading(true);
     try {
-      // householdId is embedded in the plant but we only have plantId here;
-      // pass plantId as the folder key so paths remain unique.
-      await addGrowthEntry(plantId, plantId, pendingUri, note.trim());
+      // Use the actual householdId for proper storage path organisation.
+      await addGrowthEntry(plantId, householdId, pendingUri, note.trim());
       setPendingUri(null);
       setNote('');
       await fetchEntries();

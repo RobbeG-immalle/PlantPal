@@ -28,7 +28,7 @@ export interface GrowthEntry {
   id: string;
   imageUrl: string;
   capturedAt: Timestamp;
-  note: string;
+  note?: string;
 }
 
 /** Plant result from identification API. */
