@@ -1,8 +1,14 @@
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { PurchasesPackage } from 'react-native-purchases';
 import { db } from './firebase';
-import { UserSubscription, SubscriptionTier } from '../types/subscription';
+import { UserSubscription } from '../types/subscription';
 import { COLLECTIONS } from '../utils/constants';
-import { Timestamp } from 'firebase/firestore';
+import {
+  purchasePackage,
+  restoreRevenueCatPurchases,
+  getCustomerInfo,
+  mapCustomerInfoToSubscription,
+} from './revenueCatService';
 
 const DEFAULT_SUBSCRIPTION: UserSubscription = {
   tier: 'free',
@@ -38,48 +44,42 @@ export const updateUserSubscription = async (
 };
 
 /**
- * Mock purchase implementation.
- * In production, replace this with expo-in-app-purchases or RevenueCat (react-native-purchases).
- *
- * TODO: Replace with RevenueCat / expo-in-app-purchases
+ * Purchases a RevenueCat package, syncs the resulting subscription to Firestore,
+ * and returns the updated UserSubscription.
  */
 export const purchaseSubscription = async (
   userId: string,
-  planId: string,
+  pkg: PurchasesPackage,
 ): Promise<UserSubscription> => {
-  let tier: SubscriptionTier = 'free';
-  let expiresAt: Timestamp | null = null;
-
-  if (planId === 'premium_monthly') {
-    tier = 'premium';
-    // Expires in 30 days
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + 30);
-    expiresAt = Timestamp.fromDate(expiry);
-  } else if (planId === 'premium_lifetime') {
-    tier = 'lifetime';
-    expiresAt = null;
-  }
-
-  const subscription: UserSubscription = {
-    tier,
-    purchasedAt: Timestamp.now(),
-    expiresAt,
-    isActive: true,
-    productId: planId,
-  };
+  const customerInfo = await purchasePackage(pkg);
+  const subscription = mapCustomerInfoToSubscription(customerInfo);
 
   await updateUserSubscription(userId, subscription);
   return subscription;
 };
 
 /**
- * Placeholder for restoring previous purchases.
- * In production, call RevenueCat's restorePurchases() or expo-in-app-purchases equivalent.
- *
- * TODO: Replace with RevenueCat / expo-in-app-purchases restore flow
+ * Restores previous purchases via RevenueCat, syncs to Firestore,
+ * and returns the restored UserSubscription.
  */
 export const restorePurchases = async (userId: string): Promise<UserSubscription> => {
-  // For now, simply re-read from Firestore (production would call the IAP SDK)
-  return getUserSubscription(userId);
+  const customerInfo = await restoreRevenueCatPurchases();
+  const subscription = mapCustomerInfoToSubscription(customerInfo);
+
+  await updateUserSubscription(userId, subscription);
+  return subscription;
+};
+
+/**
+ * Fetches the current subscription status from RevenueCat (not Firestore).
+ * Useful for ensuring local state is in sync with the store.
+ */
+export const syncSubscriptionFromRevenueCat = async (
+  userId: string,
+): Promise<UserSubscription> => {
+  const customerInfo = await getCustomerInfo();
+  const subscription = mapCustomerInfoToSubscription(customerInfo);
+
+  await updateUserSubscription(userId, subscription);
+  return subscription;
 };

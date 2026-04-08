@@ -23,7 +23,7 @@ type Props = {
 /** Email/password login screen. */
 export const LoginScreen = ({ navigation }: Props) => {
   const { colors, typography } = useTheme();
-  const { signIn, loading, error, clearError } = useAuth();
+  const { signIn, signInWithGoogle, loading, error, clearError } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,6 +49,16 @@ export const LoginScreen = ({ navigation }: Props) => {
 
     try {
       await signIn(email.trim(), password);
+    } catch {
+      // Error is handled by the hook
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    clearError();
+    setValidationError(null);
+    try {
+      await signInWithGoogle();
     } catch {
       // Error is handled by the hook
     }
@@ -114,6 +124,22 @@ export const LoginScreen = ({ navigation }: Props) => {
             size="lg"
           />
 
+          <View style={styles.divider}>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.textSecondary }]}>or</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          </View>
+
+          <Button
+            title="Continue with Google"
+            onPress={handleGoogleSignIn}
+            variant="outline"
+            loading={loading}
+            fullWidth
+            size="lg"
+            leftIcon={<Text style={{ fontSize: 20 }} accessibilityLabel="Google logo">G</Text>}
+          />
+
           <TouchableOpacity
             style={styles.link}
             onPress={() => navigation.navigate('Signup')}
@@ -164,6 +190,19 @@ const styles = StyleSheet.create({
   },
   form: {
     marginBottom: 24,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 14,
   },
   link: {
     marginTop: 24,

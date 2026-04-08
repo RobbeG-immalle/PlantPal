@@ -4,6 +4,7 @@ import {
   signIn,
   signUp,
   signOut,
+  signInWithGoogle,
   getUserProfile,
   subscribeToAuthChanges,
 } from '../services/authService';
@@ -85,6 +86,22 @@ export const useAuth = () => {
     [setLoading, clearError, setError, setUserProfile],
   );
 
+  const handleGoogleSignIn = useCallback(async () => {
+    try {
+      setLoading(true);
+      clearError();
+      const user = await signInWithGoogle();
+      const profile = await getUserProfile(user.uid);
+      if (profile) setUserProfile(profile);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Google sign-in failed.';
+      setError(mapFirebaseError(message));
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [setLoading, clearError, setError, setUserProfile]);
+
   const handleSignOut = useCallback(async () => {
     try {
       setLoading(true);
@@ -105,6 +122,7 @@ export const useAuth = () => {
     isAuthenticated: !!firebaseUser,
     signIn: handleSignIn,
     signUp: handleSignUp,
+    signInWithGoogle: handleGoogleSignIn,
     signOut: handleSignOut,
     clearError,
   };

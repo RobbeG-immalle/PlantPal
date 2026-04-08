@@ -23,7 +23,7 @@ type Props = {
 /** Email/password sign-up screen. */
 export const SignupScreen = ({ navigation }: Props) => {
   const { colors, typography } = useTheme();
-  const { signUp, loading, error, clearError } = useAuth();
+  const { signUp, signInWithGoogle, loading, error, clearError } = useAuth();
 
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -51,6 +51,16 @@ export const SignupScreen = ({ navigation }: Props) => {
 
     try {
       await signUp(email.trim(), password, displayName.trim());
+    } catch {
+      // Error is handled by the hook
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    clearError();
+    setValidationError(null);
+    try {
+      await signInWithGoogle();
     } catch {
       // Error is handled by the hook
     }
@@ -135,6 +145,22 @@ export const SignupScreen = ({ navigation }: Props) => {
             size="lg"
           />
 
+          <View style={styles.divider}>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+            <Text style={[styles.dividerText, { color: colors.textSecondary }]}>or</Text>
+            <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+          </View>
+
+          <Button
+            title="Continue with Google"
+            onPress={handleGoogleSignUp}
+            variant="outline"
+            loading={loading}
+            fullWidth
+            size="lg"
+            leftIcon={<Text style={{ fontSize: 20 }} accessibilityLabel="Google logo">G</Text>}
+          />
+
           <TouchableOpacity
             style={styles.link}
             onPress={() => navigation.navigate('Login')}
@@ -186,6 +212,19 @@ const styles = StyleSheet.create({
   },
   form: {
     marginBottom: 24,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 16,
+  },
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  dividerText: {
+    marginHorizontal: 12,
+    fontSize: 14,
   },
   link: {
     marginTop: 24,

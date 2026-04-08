@@ -6,9 +6,19 @@ import { StatusBar } from 'expo-status-bar';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { useAuth } from './src/hooks/useAuth';
+import { initRevenueCat } from './src/services/revenueCatService';
+import { configureGoogleSignIn } from './src/services/googleAuthService';
 
 // Keep the splash screen visible until auth state is resolved
 SplashScreen.preventAutoHideAsync();
+
+// Initialise third-party SDKs once at module scope
+// Initialise RevenueCat once at module scope (anonymous until user signs in).
+// User identification happens later via identifyUser() in useSubscription.
+initRevenueCat().catch((err) =>
+  console.warn('[RevenueCat] Initialization failed:', err),
+);
+configureGoogleSignIn();
 
 /** Inner component that has access to the theme context. */
 const AppContent = () => {
