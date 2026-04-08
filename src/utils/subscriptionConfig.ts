@@ -57,6 +57,7 @@ export const getFeatureAccess = (tier: SubscriptionTier): FeatureAccess => {
         householdSharing: true,
         funnyNotifications: true,
         escalatingReminders: true,
+        plantLifecycle: true,
       };
     case 'free':
     default:
@@ -66,6 +67,7 @@ export const getFeatureAccess = (tier: SubscriptionTier): FeatureAccess => {
         householdSharing: false,
         funnyNotifications: false,
         escalatingReminders: false,
+        plantLifecycle: false,
       };
   }
 };

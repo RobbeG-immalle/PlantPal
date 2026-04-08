@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { MainTabParamList, HomeStackParamList, HouseholdStackParamList } from '../types/navigation';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { PlantDetailScreen } from '../screens/plant/PlantDetailScreen';
+import { PlantLifecycleScreen } from '../screens/plant/PlantLifecycleScreen';
 import { AddPlantScreen } from '../screens/plant/AddPlantScreen';
 import { HouseholdScreen } from '../screens/household/HouseholdScreen';
 import { JoinHouseholdScreen } from '../screens/household/JoinHouseholdScreen';
@@ -19,11 +20,12 @@ const TabIcon = ({ emoji, focused }: { emoji: string; focused: boolean }) => (
   <Text style={{ fontSize: focused ? 26 : 22 }}>{emoji}</Text>
 );
 
-/** Home stack: plant list → plant detail. */
+/** Home stack: plant list → plant detail → plant lifecycle. */
 const HomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={{ headerShown: false }}>
     <HomeStack.Screen name="PlantList" component={HomeScreen} />
     <HomeStack.Screen name="PlantDetail" component={PlantDetailScreen} />
+    <HomeStack.Screen name="PlantLifecycle" component={PlantLifecycleScreen} />
   </HomeStack.Navigator>
 );
 

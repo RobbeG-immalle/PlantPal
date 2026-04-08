@@ -23,6 +23,14 @@ export interface Plant {
 /** Plant data when creating a new plant (no id/timestamps yet). */
 export type NewPlant = Omit<Plant, 'id' | 'createdAt' | 'wateringHistory'>;
 
+/** A single growth timeline entry for a plant (premium feature). */
+export interface GrowthEntry {
+  id: string;
+  imageUrl: string;
+  capturedAt: Timestamp;
+  note: string;
+}
+
 /** Plant result from identification API. */
 export interface PlantIdentificationResult {
   species: string;

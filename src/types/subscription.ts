@@ -26,6 +26,7 @@ export interface FeatureAccess {
   householdSharing: boolean;
   funnyNotifications: boolean;
   escalatingReminders: boolean;
+  plantLifecycle: boolean;
 }
 
 /** User subscription state stored in Firestore. */

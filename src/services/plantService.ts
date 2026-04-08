@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from './firebase';
-import { Plant, NewPlant } from '../types/plant';
+import { Plant, NewPlant, GrowthEntry } from '../types/plant';
 import { COLLECTIONS } from '../utils/constants';
 
 /**
@@ -108,4 +108,50 @@ export const waterPlant = async (id: string): Promise<void> => {
     lastWateredAt: now,
     wateringHistory: arrayUnion(now),
   });
+};
+
+/**
+ * Uploads a growth photo and adds a growth entry to a plant's timeline.
+ * Stores photos under plants/{householdId}/growth/{plantId}/{timestamp}.jpg.
+ */
+export const addGrowthEntry = async (
+  plantId: string,
+  householdId: string,
+  localImageUri: string,
+  note: string,
+): Promise<void> => {
+  const blob: Blob = await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response as Blob);
+    xhr.onerror = () => reject(new Error('Failed to read image file'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', localImageUri, true);
+    xhr.send(null);
+  });
+
+  const fileName = `plants/${householdId}/growth/${plantId}/${Date.now()}.jpg`;
+  const storageRef = ref(storage, fileName);
+  await uploadBytes(storageRef, blob);
+  const imageUrl = await getDownloadURL(storageRef);
+
+  await addDoc(
+    collection(db, COLLECTIONS.PLANTS, plantId, COLLECTIONS.GROWTH_ENTRIES),
+    {
+      imageUrl,
+      note,
+      capturedAt: serverTimestamp(),
+    },
+  );
+};
+
+/**
+ * Fetches all growth entries for a plant, newest first.
+ */
+export const getGrowthEntries = async (plantId: string): Promise<GrowthEntry[]> => {
+  const q = query(
+    collection(db, COLLECTIONS.PLANTS, plantId, COLLECTIONS.GROWTH_ENTRIES),
+    orderBy('capturedAt', 'desc'),
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as GrowthEntry));
 };

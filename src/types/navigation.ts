@@ -27,6 +27,7 @@ export type MainTabParamList = {
 export type HomeStackParamList = {
   PlantList: undefined;
   PlantDetail: { plantId: string };
+  PlantLifecycle: { plantId: string };
 };
 
 /** Household stack (nested inside Household tab). */
