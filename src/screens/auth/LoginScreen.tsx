@@ -137,7 +137,7 @@ export const LoginScreen = ({ navigation }: Props) => {
             loading={loading}
             fullWidth
             size="lg"
-            leftIcon={<Text style={{ fontSize: 20 }}>G</Text>}
+            leftIcon={<Text style={{ fontSize: 20 }} accessibilityLabel="Google logo">G</Text>}
           />
 
           <TouchableOpacity

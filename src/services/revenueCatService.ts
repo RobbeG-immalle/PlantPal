@@ -102,11 +102,12 @@ export const mapCustomerInfoToSubscription = (
     };
   }
 
-  // Determine tier based on the entitlement period / product identifier
+  // Determine tier based on the entitlement period / product identifier.
+  // Heuristic: lifetime purchases have no expiration date in RevenueCat.
+  // Verify this matches your RevenueCat dashboard product configuration.
   let tier: SubscriptionTier = 'premium';
   const productId = entitlement.productIdentifier;
 
-  // Lifetime purchases have no expiration date
   if (!entitlement.expirationDate) {
     tier = 'lifetime';
   }

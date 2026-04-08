@@ -13,6 +13,8 @@ import { configureGoogleSignIn } from './src/services/googleAuthService';
 SplashScreen.preventAutoHideAsync();
 
 // Initialise third-party SDKs once at module scope
+// Initialise RevenueCat once at module scope (anonymous until user signs in).
+// User identification happens later via identifyUser() in useSubscription.
 initRevenueCat().catch((err) =>
   console.warn('[RevenueCat] Initialization failed:', err),
 );

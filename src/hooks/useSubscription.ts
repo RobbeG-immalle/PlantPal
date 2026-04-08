@@ -43,8 +43,10 @@ export const useSubscription = () => {
         await identifyUser(firebaseUser.uid);
         const sub = await syncSubscriptionFromRevenueCat(firebaseUser.uid);
         setSubscription(sub);
-      } catch {
-        // RevenueCat may not be configured; fall back to Firestore
+      } catch (err) {
+        // RevenueCat may not be configured (e.g. missing API key in dev);
+        // fall back to Firestore-only subscription data.
+        console.warn('[useSubscription] RevenueCat sync failed, falling back to Firestore:', err);
         const sub = await getUserSubscription(firebaseUser.uid);
         setSubscription(sub);
       }
@@ -53,8 +55,9 @@ export const useSubscription = () => {
       try {
         const currentOfferings = await getOfferings();
         setOfferings(currentOfferings);
-      } catch {
-        // Offerings may fail in development; this is non-fatal
+      } catch (err) {
+        // Offerings may fail when RevenueCat is not configured; this is non-fatal
+        console.warn('[useSubscription] Failed to load RevenueCat offerings:', err);
       }
     } finally {
       setLoading(false);
