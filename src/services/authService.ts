@@ -10,6 +10,7 @@ import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { User } from '../types/user';
 import { COLLECTIONS } from '../utils/constants';
+export { signInWithGoogle } from './googleAuthService';
 
 /**
  * Signs up a new user with email/password and creates a Firestore profile.

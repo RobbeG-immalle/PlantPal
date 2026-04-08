@@ -1,16 +1,22 @@
 import { useCallback, useEffect } from 'react';
+import { PurchasesPackage } from 'react-native-purchases';
 import { useAuthStore } from '../stores/authStore';
 import { useSubscriptionStore } from '../stores/subscriptionStore';
 import {
   getUserSubscription,
   purchaseSubscription,
   restorePurchases,
+  syncSubscriptionFromRevenueCat,
 } from '../services/subscriptionService';
+import {
+  getOfferings,
+  identifyUser,
+} from '../services/revenueCatService';
 import { FeatureAccess } from '../types/subscription';
 
 /**
  * Hook providing subscription state and actions.
- * Automatically loads the subscription from Firestore on mount when authenticated.
+ * Automatically loads the subscription and RevenueCat offerings on mount when authenticated.
  */
 export const useSubscription = () => {
   const { firebaseUser } = useAuthStore();
@@ -18,41 +24,57 @@ export const useSubscription = () => {
     subscription,
     featureAccess,
     loading,
+    offerings,
     setSubscription,
     setLoading,
+    setOfferings,
     isPremium,
   } = useSubscriptionStore();
 
-  /** Fetches subscription from Firestore and updates the store. */
+  /** Fetches subscription from Firestore and RevenueCat offerings. */
   const loadSubscription = useCallback(async () => {
     if (!firebaseUser) return;
 
     try {
       setLoading(true);
-      const sub = await getUserSubscription(firebaseUser.uid);
-      setSubscription(sub);
-    } catch {
-      // Subscription load failure is non-fatal; fall back to free tier
+
+      // Identify user with RevenueCat and sync subscription
+      try {
+        await identifyUser(firebaseUser.uid);
+        const sub = await syncSubscriptionFromRevenueCat(firebaseUser.uid);
+        setSubscription(sub);
+      } catch {
+        // RevenueCat may not be configured; fall back to Firestore
+        const sub = await getUserSubscription(firebaseUser.uid);
+        setSubscription(sub);
+      }
+
+      // Load offerings from RevenueCat
+      try {
+        const currentOfferings = await getOfferings();
+        setOfferings(currentOfferings);
+      } catch {
+        // Offerings may fail in development; this is non-fatal
+      }
     } finally {
       setLoading(false);
     }
-  }, [firebaseUser, setSubscription, setLoading]);
+  }, [firebaseUser, setSubscription, setLoading, setOfferings]);
 
   useEffect(() => {
     loadSubscription();
   }, [loadSubscription]);
 
   /**
-   * Initiates a mock purchase for the given plan ID.
-   * TODO: Replace body with RevenueCat / expo-in-app-purchases flow.
+   * Purchases a RevenueCat package and syncs the result to Firestore.
    */
   const purchase = useCallback(
-    async (planId: string) => {
+    async (pkg: PurchasesPackage) => {
       if (!firebaseUser) throw new Error('Not authenticated');
 
       try {
         setLoading(true);
-        const updated = await purchaseSubscription(firebaseUser.uid, planId);
+        const updated = await purchaseSubscription(firebaseUser.uid, pkg);
         setSubscription(updated);
       } finally {
         setLoading(false);
@@ -61,7 +83,7 @@ export const useSubscription = () => {
     [firebaseUser, setSubscription, setLoading],
   );
 
-  /** Restores previous purchases from Firestore / IAP SDK. */
+  /** Restores previous purchases via RevenueCat. */
   const restore = useCallback(async () => {
     if (!firebaseUser) return;
 
@@ -103,6 +125,7 @@ export const useSubscription = () => {
     subscription,
     featureAccess,
     loading,
+    offerings,
     isPremium,
     loadSubscription,
     purchase,

@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { PurchasesOfferings } from 'react-native-purchases';
 import { FeatureAccess, UserSubscription } from '../types/subscription';
 import { getFeatureAccess } from '../utils/subscriptionConfig';
 
@@ -14,9 +15,11 @@ interface SubscriptionState {
   subscription: UserSubscription;
   featureAccess: FeatureAccess;
   loading: boolean;
+  offerings: PurchasesOfferings | null;
 
   setSubscription: (sub: UserSubscription) => void;
   setLoading: (loading: boolean) => void;
+  setOfferings: (offerings: PurchasesOfferings | null) => void;
   isPremium: () => boolean;
 }
 
@@ -25,6 +28,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   subscription: DEFAULT_SUBSCRIPTION,
   featureAccess: getFeatureAccess('free'),
   loading: false,
+  offerings: null,
 
   setSubscription: (sub) =>
     set({
@@ -33,6 +37,8 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     }),
 
   setLoading: (loading) => set({ loading }),
+
+  setOfferings: (offerings) => set({ offerings }),
 
   isPremium: () => {
     const { subscription } = get();

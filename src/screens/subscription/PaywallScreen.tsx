@@ -11,11 +11,11 @@ import {
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { PurchasesPackage } from 'react-native-purchases';
 import { useTheme } from '../../theme/ThemeContext';
 import { Button } from '../../components/Button';
 import { useSubscription } from '../../hooks/useSubscription';
 import { SUBSCRIPTION_PLANS } from '../../utils/subscriptionConfig';
-import { SubscriptionPlan } from '../../types/subscription';
 import { RootStackParamList } from '../../types/navigation';
 
 type PaywallNavProp = NativeStackNavigationProp<RootStackParamList, 'Paywall'>;
@@ -30,13 +30,67 @@ const ALL_FEATURES = [
   { key: 'darkmode', label: 'Dark mode', free: true },
 ];
 
-interface PlanCardProps {
-  plan: SubscriptionPlan;
+interface PackageCardProps {
+  pkg: PurchasesPackage;
   selected: boolean;
   onSelect: () => void;
 }
 
-const PlanCard = ({ plan, selected, onSelect }: PlanCardProps) => {
+/** Card displaying a RevenueCat package. */
+const PackageCard = ({ pkg, selected, onSelect }: PackageCardProps) => {
+  const { colors, borderRadius, shadows, typography } = useTheme();
+  const product = pkg.product;
+
+  return (
+    <TouchableOpacity
+      onPress={onSelect}
+      activeOpacity={0.8}
+      style={[
+        styles.planCard,
+        {
+          backgroundColor: colors.surface,
+          borderRadius: borderRadius.lg,
+          borderWidth: selected ? 2 : 1,
+          borderColor: selected ? colors.primary : colors.border,
+          ...(selected ? shadows.md : shadows.sm),
+        },
+      ]}
+    >
+      <View style={styles.planHeader}>
+        <View style={{ flex: 1 }}>
+          <Text style={[typography.headline, { color: colors.text, fontWeight: '700' }]}>
+            {product.title}
+          </Text>
+          <Text style={[typography.footnote, { color: colors.textSecondary }]}>
+            {product.description}
+          </Text>
+        </View>
+        <View style={styles.priceBox}>
+          <Text style={[styles.price, { color: colors.primary }]}>{product.priceString}</Text>
+          {pkg.packageType === 'MONTHLY' && (
+            <Text style={[typography.caption1, { color: colors.textSecondary }]}>per month</Text>
+          )}
+          {pkg.packageType === 'LIFETIME' && (
+            <Text style={[typography.caption1, { color: colors.textSecondary }]}>one-time</Text>
+          )}
+        </View>
+      </View>
+
+      {selected && (
+        <View style={[styles.selectedDot, { backgroundColor: colors.primary }]} />
+      )}
+    </TouchableOpacity>
+  );
+};
+
+interface FallbackPlanCardProps {
+  plan: (typeof SUBSCRIPTION_PLANS)[number];
+  selected: boolean;
+  onSelect: () => void;
+}
+
+/** Fallback card for when RevenueCat offerings are unavailable. */
+const FallbackPlanCard = ({ plan, selected, onSelect }: FallbackPlanCardProps) => {
   const { colors, borderRadius, shadows, typography } = useTheme();
 
   return (
@@ -60,7 +114,7 @@ const PlanCard = ({ plan, selected, onSelect }: PlanCardProps) => {
         </View>
       )}
       <View style={styles.planHeader}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={[typography.headline, { color: colors.text, fontWeight: '700' }]}>
             {plan.name}
           </Text>
@@ -95,19 +149,36 @@ const PlanCard = ({ plan, selected, onSelect }: PlanCardProps) => {
   );
 };
 
-/** Paywall screen shown when users hit a feature gate or plant limit. */
+/** Paywall screen showing RevenueCat offerings or fallback plans. */
 export const PaywallScreen = () => {
   const { colors, typography, borderRadius, shadows, spacing } = useTheme();
   const navigation = useNavigation<PaywallNavProp>();
-  const { purchase, restore, loading } = useSubscription();
+  const { purchase, restore, loading, offerings } = useSubscription();
 
-  const [selectedPlanId, setSelectedPlanId] = useState<string>('premium_monthly');
+  // RevenueCat packages from the current offering
+  const packages = offerings?.current?.availablePackages ?? [];
+  const hasRevenueCatPackages = packages.length > 0;
+
+  // Track selection
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedFallbackPlanId, setSelectedFallbackPlanId] = useState('premium_monthly');
 
   const paidPlans = SUBSCRIPTION_PLANS.filter((p) => p.tier !== 'free');
 
   const handlePurchase = async () => {
+    if (!hasRevenueCatPackages) {
+      Alert.alert(
+        'Purchases unavailable',
+        'In-app purchases are not configured yet. Please try again later.',
+      );
+      return;
+    }
+
+    const selectedPkg = packages[selectedIndex];
+    if (!selectedPkg) return;
+
     try {
-      await purchase(selectedPlanId);
+      await purchase(selectedPkg);
       Alert.alert('🎉 Welcome to Premium!', 'Your plants deserve the best. Enjoy all features!', [
         { text: 'Let\'s go!', onPress: () => navigation.goBack() },
       ]);
@@ -195,34 +266,42 @@ export const PaywallScreen = () => {
           </View>
         </Animated.View>
 
-        {/* Plan cards */}
+        {/* Plan/Package cards */}
         <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.plansSection}>
           <Text style={[typography.headline, { color: colors.text, fontWeight: '700', marginBottom: 12 }]}>
             Choose your plan
           </Text>
-          {paidPlans.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              selected={selectedPlanId === plan.id}
-              onSelect={() => setSelectedPlanId(plan.id)}
-            />
-          ))}
+
+          {hasRevenueCatPackages
+            ? packages.map((pkg, index) => (
+                <PackageCard
+                  key={pkg.identifier}
+                  pkg={pkg}
+                  selected={selectedIndex === index}
+                  onSelect={() => setSelectedIndex(index)}
+                />
+              ))
+            : paidPlans.map((plan) => (
+                <FallbackPlanCard
+                  key={plan.id}
+                  plan={plan}
+                  selected={selectedFallbackPlanId === plan.id}
+                  onSelect={() => setSelectedFallbackPlanId(plan.id)}
+                />
+              ))}
         </Animated.View>
 
         {/* CTA */}
         <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.ctaSection}>
           <Button
-            title={selectedPlanId === 'premium_lifetime' ? '🌿 One-time payment, lifetime love 💚' : '🌱 Go Premium'}
+            title="🌱 Go Premium"
             onPress={handlePurchase}
             loading={loading}
             fullWidth
             size="lg"
           />
           <Text style={[styles.ctaSubtext, { color: colors.textSecondary }]}>
-            {selectedPlanId === 'premium_monthly'
-              ? 'Cancel anytime. No hidden fees.'
-              : 'One-time payment. No subscriptions.'}
+            Cancel anytime. No hidden fees.
           </Text>
         </Animated.View>
 

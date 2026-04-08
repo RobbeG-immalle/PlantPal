@@ -60,7 +60,8 @@
           "photosPermission": "Allow PlantPal to access your photos to identify plants."
         }
       ],
-      "expo-font"
+      "expo-font",
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "eas": {
