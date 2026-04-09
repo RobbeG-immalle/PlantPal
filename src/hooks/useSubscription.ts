@@ -1,4 +1,5 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { PurchasesPackage } from 'react-native-purchases';
 import { useAuthStore } from '../stores/authStore';
 import { useSubscriptionStore } from '../stores/subscriptionStore';
@@ -7,10 +8,13 @@ import {
   purchaseSubscription,
   restorePurchases,
   syncSubscriptionFromRevenueCat,
+  updateUserSubscription,
 } from '../services/subscriptionService';
 import {
   getOfferings,
   identifyUser,
+  addCustomerInfoListener,
+  mapCustomerInfoToSubscription,
 } from '../services/revenueCatService';
 import { FeatureAccess } from '../types/subscription';
 
@@ -67,6 +71,46 @@ export const useSubscription = () => {
   useEffect(() => {
     loadSubscription();
   }, [loadSubscription]);
+
+  // Listen for RevenueCat customer info changes (purchases, renewals, revocations)
+  // that may happen outside the normal in-app purchase flow.
+  useEffect(() => {
+    if (!firebaseUser) return;
+
+    const remove = addCustomerInfoListener(async (customerInfo) => {
+      try {
+        const sub = mapCustomerInfoToSubscription(customerInfo);
+        setSubscription(sub);
+        await updateUserSubscription(firebaseUser.uid, sub);
+      } catch (err) {
+        console.warn('[useSubscription] CustomerInfo listener sync failed:', err);
+      }
+    });
+
+    return remove;
+  }, [firebaseUser, setSubscription]);
+
+  // Re-sync subscription when the app returns to the foreground so that
+  // purchases made outside the app (e.g. Play Store subscription management)
+  // are picked up immediately.
+  const appState = useRef(AppState.currentState);
+  useEffect(() => {
+    if (!firebaseUser) return;
+
+    const handleAppStateChange = (nextState: AppStateStatus) => {
+      if (appState.current.match(/inactive|background/) && nextState === 'active') {
+        syncSubscriptionFromRevenueCat(firebaseUser.uid)
+          .then((sub) => setSubscription(sub))
+          .catch((err) =>
+            console.warn('[useSubscription] Foreground sync failed:', err),
+          );
+      }
+      appState.current = nextState;
+    };
+
+    const listener = AppState.addEventListener('change', handleAppStateChange);
+    return () => listener.remove();
+  }, [firebaseUser, setSubscription]);
 
   /**
    * Purchases a RevenueCat package and syncs the result to Firestore.

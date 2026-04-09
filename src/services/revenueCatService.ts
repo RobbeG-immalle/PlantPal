@@ -4,12 +4,13 @@ import Purchases, {
   PurchasesPackage,
   CustomerInfo,
   LOG_LEVEL,
+  CustomerInfoUpdateListener,
 } from 'react-native-purchases';
 import { UserSubscription, SubscriptionTier } from '../types/subscription';
 import { Timestamp } from 'firebase/firestore';
 
 /** RevenueCat entitlement identifier configured in the RevenueCat dashboard. */
-const PREMIUM_ENTITLEMENT_ID = 'premium';
+const PREMIUM_ENTITLEMENT_ID = 'PlantPal Pro';
 
 /**
  * Initialises the RevenueCat SDK.
@@ -90,9 +91,23 @@ export const getCustomerInfo = async (): Promise<CustomerInfo> => {
 export const mapCustomerInfoToSubscription = (
   customerInfo: CustomerInfo,
 ): UserSubscription => {
+  if (__DEV__) {
+    console.log('[RevenueCat] CustomerInfo mapping:');
+    console.log('  Active entitlements:', Object.keys(customerInfo.entitlements.active));
+    console.log('  All entitlements:', Object.keys(customerInfo.entitlements.all));
+    console.log('  Active subscriptions:', customerInfo.activeSubscriptions);
+    console.log('  Looking for entitlement ID:', PREMIUM_ENTITLEMENT_ID);
+  }
+
   const entitlement = customerInfo.entitlements.active[PREMIUM_ENTITLEMENT_ID];
 
   if (!entitlement) {
+    if (__DEV__) {
+      console.warn(
+        `[RevenueCat] No active entitlement found for "${PREMIUM_ENTITLEMENT_ID}".`,
+        'Make sure your RevenueCat product is attached to an entitlement named exactly "premium".',
+      );
+    }
     return {
       tier: 'free',
       purchasedAt: null,
@@ -123,4 +138,15 @@ export const mapCustomerInfoToSubscription = (
     isActive: true,
     productId,
   };
+};
+
+/**
+ * Registers a listener that fires whenever RevenueCat's CustomerInfo changes
+ * (e.g. after a purchase, renewal, or restore – even if it happened outside the app).
+ * Returns an unsubscribe function.
+ */
+export const addCustomerInfoListener = (
+  listener: CustomerInfoUpdateListener,
+): (() => void) => {
+  return Purchases.addCustomerInfoUpdateListener(listener);
 };
