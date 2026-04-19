@@ -24,10 +24,14 @@ export const configureGoogleSignIn = (): void => {
     return;
   }
 
-  GoogleSignin.configure({
-    webClientId,
-    offlineAccess: false,
-  });
+  try {
+    GoogleSignin.configure({
+      webClientId,
+      offlineAccess: false,
+    });
+  } catch {
+    console.warn('[GoogleAuth] Native module not available. Google Sign-In will not work in Expo Go.');
+  }
 };
 
 /**

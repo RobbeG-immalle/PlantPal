@@ -19,7 +19,11 @@ SplashScreen.preventAutoHideAsync();
 initRevenueCat().catch((err) =>
   console.warn('[RevenueCat] Initialization failed:', err),
 );
-configureGoogleSignIn();
+try {
+  configureGoogleSignIn();
+} catch (err) {
+  console.warn('[GoogleAuth] Native module not available – Google Sign-In disabled:', err);
+}
 
 /** Inner component that has access to the theme context. */
 const AppContent = () => {

@@ -8,17 +8,19 @@ import { PaywallScreen } from '../screens/subscription/PaywallScreen';
 import { useAuthStore } from '../stores/authStore';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { useNotifications } from '../hooks/useNotifications';
+import { useSubscription } from '../hooks/useSubscription';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 /** Root navigator that switches between Auth and Main based on login state. */
 export const AppNavigator = () => {
   const { loading, firebaseUser } = useAuthStore();
+  const { loading: subscriptionLoading } = useSubscription();
 
   // Register for notifications when authenticated
   useNotifications();
 
-  if (loading) {
+  if (loading || (firebaseUser && subscriptionLoading)) {
     return <LoadingSpinner fullScreen message="Loading PlantPal..." />;
   }
 

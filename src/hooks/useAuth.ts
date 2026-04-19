@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { useAuthStore } from '../stores/authStore';
+import { useSubscriptionStore } from '../stores/subscriptionStore';
 import {
   signIn,
   signUp,
@@ -8,6 +9,7 @@ import {
   getUserProfile,
   subscribeToAuthChanges,
 } from '../services/authService';
+import { resetUser } from '../services/revenueCatService';
 
 /**
  * Hook providing authentication actions and state.
@@ -105,6 +107,12 @@ export const useAuth = () => {
   const handleSignOut = useCallback(async () => {
     try {
       setLoading(true);
+      try {
+        await resetUser();
+      } catch (err) {
+        console.warn('[useAuth] RevenueCat resetUser failed:', err);
+      }
+      useSubscriptionStore.getState().resetSubscription();
       await signOut();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Sign out failed.';

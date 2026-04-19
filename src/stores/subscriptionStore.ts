@@ -21,6 +21,7 @@ interface SubscriptionState {
   setLoading: (loading: boolean) => void;
   setOfferings: (offerings: PurchasesOfferings | null) => void;
   isPremium: () => boolean;
+  resetSubscription: () => void;
 }
 
 /** Zustand store for subscription state. */
@@ -44,4 +45,12 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     const { subscription } = get();
     return subscription.tier === 'premium' || subscription.tier === 'lifetime';
   },
+
+  resetSubscription: () =>
+    set({
+      subscription: DEFAULT_SUBSCRIPTION,
+      featureAccess: getFeatureAccess('free'),
+      loading: false,
+      offerings: null,
+    }),
 }));

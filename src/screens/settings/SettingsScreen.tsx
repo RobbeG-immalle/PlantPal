@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Switch,
   Alert,
   TouchableOpacity,
+  Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '../../theme/ThemeContext';
@@ -72,6 +72,7 @@ const SettingsRow = ({
 /** Settings screen with profile info, theme toggle, and sign out. */
 export const SettingsScreen = () => {
   const { colors, typography, borderRadius, shadows, isDark, toggleTheme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { signOut } = useAuth();
   const { userProfile } = useAuthStore();
   const { household } = useHouseholdStore();
@@ -93,7 +94,7 @@ export const SettingsScreen = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
+    <View style={[styles.safe, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <Text style={[styles.title, typography.title1, { color: colors.text }]}>
           ⚙️ Settings
@@ -106,7 +107,6 @@ export const SettingsScreen = () => {
             {
               backgroundColor: colors.surface,
               borderRadius: borderRadius.lg,
-              ...shadows.sm,
             },
           ]}
         >
@@ -141,7 +141,6 @@ export const SettingsScreen = () => {
             {
               backgroundColor: colors.surface,
               borderRadius: borderRadius.lg,
-              ...shadows.sm,
             },
           ]}
         >
@@ -167,7 +166,6 @@ export const SettingsScreen = () => {
             {
               backgroundColor: colors.surface,
               borderRadius: borderRadius.lg,
-              ...shadows.sm,
             },
           ]}
         >
@@ -214,7 +212,6 @@ export const SettingsScreen = () => {
             {
               backgroundColor: colors.surface,
               borderRadius: borderRadius.lg,
-              ...shadows.sm,
             },
           ]}
         >
@@ -223,14 +220,8 @@ export const SettingsScreen = () => {
           </Text>
           <SettingsRow
             label="Dark mode"
-            rightElement={
-              <Switch
-                value={isDark}
-                onValueChange={toggleTheme}
-                trackColor={{ false: colors.border, true: colors.primary }}
-                thumbColor="#FFFFFF"
-              />
-            }
+            value={isDark ? 'On' : 'Off'}
+            onPress={toggleTheme}
           />
         </View>
 
@@ -241,7 +232,6 @@ export const SettingsScreen = () => {
             {
               backgroundColor: colors.surface,
               borderRadius: borderRadius.lg,
-              ...shadows.sm,
             },
           ]}
         >
@@ -249,7 +239,14 @@ export const SettingsScreen = () => {
             APP
           </Text>
           <SettingsRow label="Version" value={APP_VERSION} />
-          <SettingsRow label="Built with 💚 for plant lovers" />
+          <SettingsRow
+            label="Privacy Policy"
+            onPress={() => Linking.openURL('https://your-domain.com/privacy')}
+          />
+          <SettingsRow
+            label="Terms of Service"
+            onPress={() => Linking.openURL('https://your-domain.com/terms')}
+          />
         </View>
 
         {/* Sign out */}
@@ -259,7 +256,6 @@ export const SettingsScreen = () => {
             {
               backgroundColor: colors.surface,
               borderRadius: borderRadius.lg,
-              ...shadows.sm,
             },
           ]}
         >
@@ -270,7 +266,7 @@ export const SettingsScreen = () => {
           🌱 PlantPal v{APP_VERSION} – Keep your plants happy!
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -317,5 +313,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 13,
     marginTop: 8,
+  },
+  toggle: {
+    width: 50,
+    height: 30,
+    borderRadius: 15,
+    padding: 5,
+    justifyContent: 'center',
+  },
+  toggleThumb: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
   },
 });

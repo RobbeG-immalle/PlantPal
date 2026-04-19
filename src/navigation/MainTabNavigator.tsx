@@ -16,6 +16,8 @@ import { useTheme } from '../theme/ThemeContext';
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const HouseholdStack = createNativeStackNavigator<HouseholdStackParamList>();
+const SettingsStack = createNativeStackNavigator();
+const AddPlantStack = createNativeStackNavigator();
 
 const TabIcon = ({ emoji, focused }: { emoji: string; focused: boolean }) => (
   <Text style={{ fontSize: focused ? 26 : 22 }}>{emoji}</Text>
@@ -38,6 +40,20 @@ const HouseholdStackNavigator = () => (
   </HouseholdStack.Navigator>
 );
 
+/** Settings wrapped in a stack for consistent native view hierarchy. */
+const SettingsStackNavigator = () => (
+  <SettingsStack.Navigator screenOptions={{ headerShown: false }}>
+    <SettingsStack.Screen name="SettingsMain" component={SettingsScreen} />
+  </SettingsStack.Navigator>
+);
+
+/** Add Plant wrapped in a stack for consistent native view hierarchy. */
+const AddPlantStackNavigator = () => (
+  <AddPlantStack.Navigator screenOptions={{ headerShown: false }}>
+    <AddPlantStack.Screen name="AddPlantMain" component={AddPlantScreen} />
+  </AddPlantStack.Navigator>
+);
+
 /** Bottom tab navigator for the main app experience. */
 export const MainTabNavigator = () => {
   const { colors } = useTheme();
@@ -47,6 +63,7 @@ export const MainTabNavigator = () => {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+        freezeOnBlur: false,
         tabBarStyle: {
           backgroundColor: colors.tabBar,
           borderTopColor: colors.border,
@@ -73,7 +90,7 @@ export const MainTabNavigator = () => {
       />
       <Tab.Screen
         name="AddPlant"
-        component={AddPlantScreen}
+        component={AddPlantStackNavigator}
         options={{
           tabBarLabel: 'Add Plant',
           tabBarIcon: ({ focused }) => <TabIcon emoji="🌱" focused={focused} />,
@@ -89,7 +106,7 @@ export const MainTabNavigator = () => {
       />
       <Tab.Screen
         name="Settings"
-        component={SettingsScreen}
+        component={SettingsStackNavigator}
         options={{
           tabBarLabel: 'Settings',
           tabBarIcon: ({ focused }) => <TabIcon emoji="🐝" focused={focused} />,
